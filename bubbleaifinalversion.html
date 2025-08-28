@@ -1,0 +1,509 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bubble Ideation App</title>
+
+    <!--
+    This style block contains all the CSS to create the visual design of the app.
+    It includes styling for the background, the bubbles, buttons, and a modal for images.
+    The colors are chosen for a cohesive, warm aesthetic.
+    -->
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Garamond', serif;
+            background-color: #F8C362; /* A yellow-orange background */
+            background: radial-gradient(circle, #FDE6B0 0%, #F8C362 50%, #E39540 100%);
+            overflow: hidden;
+        }
+
+        #app-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .bubble {
+            position: absolute;
+            background-color: #E39540; /* A darker yellow-orange for the bubbles */
+            border-radius: 50px;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.5), /* Darker shadow for depth */
+            -5px -5px 15px rgba(255,255,255,0.5), /* Highlight for 3D effect */
+            inset 0 0 10px rgba(0,0,0,0.3); /* Inner shadow */
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+            cursor: grab;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+            width: 300px;
+            min-height: 150px;
+        }
+
+        .bubble-content {
+            font-size: 13pt;
+            color: #4A3A2B;
+            text-align: center;
+            width: 100%;
+            min-height: 50px;
+            border: none;
+            outline: none;
+            background: transparent;
+            resize: none;
+        }
+
+        .bubble-controls {
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            display: flex;
+            gap: 5px;
+        }
+
+        .control-btn {
+            background-color: #4A3A2B;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #create-bubble-btn, #download-pdf-btn, #color-wheel-btn {
+            position: fixed;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            background-color: #E39540;
+            color: #fff;
+            font-size: 2em;
+            padding: 10px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+            z-index: 100;
+        }
+
+        #create-bubble-btn {
+            bottom: 20px;
+            left: 20px;
+            width: 60px;
+            height: 60px;
+        }
+
+        #download-pdf-btn {
+            top: 20px;
+            right: 5%;
+            width: 40px;
+            height: 40px;
+            font-size: 14px; /* Reduced font size by 2px */
+        }
+
+        #color-wheel-btn {
+            top: 20px;
+            right: calc(5% + 50px); /* Position next to the download button */
+            width: 40px;
+            height: 40px;
+            font-size: 1em;
+        }
+
+        .attached-image {
+            max-width: 90%; /* Image is slightly smaller than the bubble */
+            max-height: 150px;
+            margin-top: 10px;
+            border-radius: 5px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .attached-audio {
+            width: 90%;
+            margin-top: 10px;
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .modal-image {
+            max-width: 90vw;
+            max-height: 90vh;
+        }
+
+        .message-modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .message-modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 16px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        #color-picker-modal {
+            width: 300px;
+            background: silver;
+        }
+
+            #color-picker-modal .color-swatch-container {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                justify-content: center;
+                background: silver;
+            }
+
+        .color-swatch {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid #fff;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+        }
+
+        .selected-bubble {
+            box-shadow: 0 0 10px 5px #4A3A2B, inset 0 0 5px 2px #4A3A2B;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app-container">
+        <!-- Bubbles will be added dynamically here by JavaScript -->
+    </div>
+
+    <!-- Top-right button for PDF download -->
+    <button id="download-pdf-btn">Download PDF</button>
+
+    <!-- Top-right color wheel button -->
+    <button id="color-wheel-btn">🎨</button>
+
+    <!-- Bottom-left button to create a new bubble -->
+    <button id="create-bubble-btn">+</button>
+
+    <!-- Custom message modal for non-image alerts -->
+    <div id="message-modal" class="message-modal-backdrop">
+        <div class="message-modal-content">
+            <p id="message-text"></p>
+            <button class="control-btn" onclick="this.parentElement.parentElement.style.display='none'">OK</button>
+        </div>
+    </div>
+
+    <!-- Color picker modal -->
+    <div id="color-picker-modal" class="modal-backdrop">
+        <div class="modal-content">
+            <h3>Choose a Bubble Color</h3>
+            <div class="color-swatch-container">
+                <!-- Original Colors -->
+                <div class="color-swatch" style="background-color: #E39540;"></div>
+                <div class="color-swatch" style="background-color: #6A9E9C;"></div>
+                <div class="color-swatch" style="background-color: #B46464;"></div>
+                <div class="color-swatch" style="background-color: #8C6A8C;"></div>
+                <!-- New Colors -->
+                <div class="color-swatch" style="background-color: #A4C3A3;"></div>
+                <div class="color-swatch" style="background-color: #A3A6C3;"></div>
+                <div class="color-swatch" style="background-color: #C3A3C3;"></div>
+                <div class="color-swatch" style="background-color: #F7D299;"></div>
+            </div>
+            <button class="control-btn" onclick="this.parentElement.parentElement.style.display='none'">Cancel</button>
+        </div>
+    </div>
+
+    <!--
+    This section loads the necessary external libraries for image-to-PDF conversion.
+    html2canvas: Captures a screenshot of the app-container.
+    jspdf: Creates the PDF document from the captured image.
+    -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <!--
+    This script block contains all the interactive logic for the application.
+    It handles creating bubbles, drag-and-drop, and various media attachments.
+    -->
+    <script>
+        const appContainer = document.getElementById('app-container');
+        const createBubbleBtn = document.getElementById('create-bubble-btn');
+        const downloadPdfBtn = document.getElementById('download-pdf-btn');
+        const colorWheelBtn = document.getElementById('color-wheel-btn');
+        const colorPickerModal = document.getElementById('color-picker-modal');
+
+        let activeBubble = null;
+        let initialX, initialY;
+        let isDragging = false;
+        let selectedBubble = null;
+
+        /**
+         * Creates and adds a new bubble to the application container.
+         * The bubble includes a textarea and file attachment buttons.
+         */
+        createBubbleBtn.addEventListener('click', () => {
+            const bubble = document.createElement('div');
+            bubble.classList.add('bubble');
+            // Place the new bubble at a random position to avoid stacking
+            bubble.style.top = `${Math.random() * (window.innerHeight - 200)}px`;
+            bubble.style.left = `${Math.random() * (window.innerWidth - 300)}px`;
+
+            // Create hidden file input elements for image and audio
+            const imageInput = document.createElement('input');
+            imageInput.type = 'file';
+            imageInput.accept = 'image/*';
+            imageInput.style.display = 'none';
+
+            const audioInput = document.createElement('input');
+            audioInput.type = 'file';
+            audioInput.accept = 'audio/*';
+            audioInput.style.display = 'none';
+
+            bubble.innerHTML = `
+                <textarea class="bubble-content" placeholder="Type your idea here..."></textarea>
+                <div class="bubble-controls">
+                    <button class="control-btn attach-image-btn">📎</button>
+                    <button class="control-btn attach-audio-btn">🎵</button>
+                </div>
+            `;
+
+            bubble.appendChild(imageInput);
+            bubble.appendChild(audioInput);
+            appContainer.appendChild(bubble);
+
+            const textarea = bubble.querySelector('.bubble-content');
+            textarea.focus();
+
+            // Handle bubble selection for color changing
+            bubble.addEventListener('click', (e) => {
+                // Prevent selection if clicking on a control button or textarea
+                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'IMG' || e.target.tagName === 'AUDIO') {
+                    return;
+                }
+
+                // Deselect previous bubble if it exists
+                if (selectedBubble && selectedBubble !== bubble) {
+                    selectedBubble.classList.remove('selected-bubble');
+                }
+
+                // Toggle selection state
+                if (selectedBubble === bubble) {
+                    selectedBubble.classList.remove('selected-bubble');
+                    selectedBubble = null;
+                } else {
+                    bubble.classList.add('selected-bubble');
+                    selectedBubble = bubble;
+                }
+            });
+
+            // Handle dragging logic
+            bubble.addEventListener('mousedown', (e) => {
+                // Only start dragging if not clicking on a sub-element
+                if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'IMG' && e.target.tagName !== 'AUDIO') {
+                    isDragging = true;
+                    activeBubble = bubble;
+                    initialX = e.clientX - bubble.offsetLeft;
+                    initialY = e.clientY - bubble.offsetTop;
+                    bubble.style.cursor = 'grabbing';
+                    bubble.style.zIndex = 99; // Bring to front
+                }
+            });
+
+            // Handle image attachment
+            const attachImageBtn = bubble.querySelector('.attach-image-btn');
+            attachImageBtn.addEventListener('click', () => {
+                imageInput.click();
+            });
+
+            imageInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const imageUrl = event.target.result;
+                        const existingImg = bubble.querySelector('.attached-image');
+                        if (existingImg) {
+                            existingImg.src = imageUrl;
+                        } else {
+                            const img = document.createElement('img');
+                            img.src = imageUrl;
+                            img.classList.add('attached-image');
+                            img.addEventListener('click', () => {
+                                showImageModal(imageUrl);
+                            });
+                            bubble.appendChild(img);
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // Handle audio attachment
+            const attachAudioBtn = bubble.querySelector('.attach-audio-btn');
+            attachAudioBtn.addEventListener('click', () => {
+                audioInput.click();
+            });
+
+            audioInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                const maxSize = 4 * 1024 * 1024; // 4 MB in bytes
+                if (file && file.size > maxSize) {
+                    showMessage('Audio file is too large. Maximum size is 4 MB.');
+                    audioInput.value = ''; // Reset the input
+                    return;
+                }
+
+                if (file) {
+                    const audioUrl = URL.createObjectURL(file);
+                    const existingAudio = bubble.querySelector('.attached-audio');
+                    if (existingAudio) {
+                        existingAudio.src = audioUrl;
+                    } else {
+                        const audio = document.createElement('audio');
+                        audio.controls = true;
+                        audio.src = audioUrl;
+                        audio.classList.add('attached-audio');
+                        bubble.appendChild(audio);
+                    }
+                }
+            });
+        });
+
+        // Handle color wheel button click
+        colorWheelBtn.addEventListener('click', () => {
+            if (!selectedBubble) {
+                showMessage('Please select a bubble first by clicking on it.');
+                return;
+            }
+            colorPickerModal.style.display = 'flex';
+        });
+
+        // Handle color swatch clicks within the modal
+        document.querySelectorAll('.color-swatch').forEach(swatch => {
+            swatch.addEventListener('click', (e) => {
+                if (selectedBubble) {
+                    selectedBubble.style.backgroundColor = e.target.style.backgroundColor;
+                }
+                colorPickerModal.style.display = 'none';
+            });
+        });
+
+        // Dragging functionality
+        appContainer.addEventListener('mousemove', (e) => {
+            if (!isDragging || !activeBubble) return;
+            e.preventDefault();
+            const newX = e.clientX - initialX;
+            const newY = e.clientY - initialY;
+            activeBubble.style.left = `${newX}px`;
+            activeBubble.style.top = `${newY}px`;
+        });
+
+        appContainer.addEventListener('mouseup', () => {
+            isDragging = false;
+            if (activeBubble) {
+                activeBubble.style.cursor = 'grab';
+                activeBubble.style.zIndex = 98;
+                activeBubble = null;
+            }
+        });
+
+        /**
+         * Converts the app-container content into a PDF and triggers a download.
+         * Uses html2canvas to capture the visual state of the page.
+         */
+        downloadPdfBtn.addEventListener('click', async () => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const pageContainer = document.getElementById('app-container');
+
+            const canvas = await html2canvas(pageContainer, {
+                scale: 1.5,
+                useCORS: true
+            });
+
+            const imgData = canvas.toDataURL('image/png');
+            const imgWidth = 240;
+            const pageHeight = 297;
+            const imgHeight = canvas.height * imgWidth / canvas.width;
+            let heightLeft = imgHeight;
+            let position = 0;
+
+            doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+
+            while (heightLeft >= 0) {
+                position = heightLeft - imgHeight;
+                doc.addPage();
+                doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+            }
+
+            doc.save('my-bubbles.pdf');
+        });
+
+        /**
+         * Shows a modal with the full-size generated image.
+         * @param {string} imageUrl The data URL of the image to display.
+         */
+        function showImageModal(imageUrl) {
+            let modal = document.querySelector('.modal-backdrop');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.classList.add('modal-backdrop');
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <img src="" class="modal-image">
+                        <button class="control-btn" onclick="this.parentElement.parentElement.style.display='none'">Close</button>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+            modal.style.display = 'flex';
+            modal.querySelector('.modal-image').src = imageUrl;
+        }
+
+        /**
+         * Shows a custom text message modal.
+         * @param {string} message The text message to display.
+         */
+        function showMessage(message) {
+            const modal = document.getElementById('message-modal');
+            const messageText = document.getElementById('message-text');
+            messageText.textContent = message;
+            modal.style.display = 'flex';
+        }
+
+    </script>
+</body>
+</html>
